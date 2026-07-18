@@ -1,6 +1,4 @@
 // Hand-maintained types mirroring supabase/migrations/0001_init.sql.
-// If you have the Supabase CLI linked, prefer `supabase gen types typescript`
-// to regenerate this from the live schema.
 
 export type UserRole = "admin" | "nurse" | "family";
 export type ShiftStatus = "scheduled" | "checked_in" | "completed" | "missed" | "cancelled";
@@ -180,9 +178,3 @@ export interface AuditLog {
   metadata: Record<string, unknown> | null;
   created_at: string;
 }
-
-// Minimal Database type satisfying the supabase-js generic client.
-// Loosely typed on purpose — call sites use the domain interfaces above
-// for real type safety after `.select()`.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Database = any;

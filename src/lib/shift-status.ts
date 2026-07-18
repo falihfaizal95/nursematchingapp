@@ -6,10 +6,9 @@ const GRACE_MINUTES = 15;
 
 // Derives the live-board status for a shift. "missed" is computed on read
 // (start_time + grace period elapsed, no check-in yet) rather than a stored
-// value, so the board is always accurate without a background job.
-// Production note: add a scheduled function (Vercel Cron) that performs the
-// same check server-side and pages the admin, since nobody may have the
-// board open when a visit is missed.
+// value. Production note: add a scheduled Supabase Edge Function (pg_cron
+// or a scheduled Function) that performs the same check server-side and
+// pages the admin, since nobody may have the app open when a visit is missed.
 export function deriveShiftStatus(shift: Shift, visit: Visit | undefined): LiveStatus {
   if (shift.status === "cancelled") return "cancelled";
   if (visit?.check_out_at) return "completed";
@@ -20,12 +19,12 @@ export function deriveShiftStatus(shift: Shift, visit: Visit | undefined): LiveS
   return "scheduled";
 }
 
-export const STATUS_STYLES: Record<LiveStatus, string> = {
-  scheduled: "bg-stone-100 text-stone-700",
-  checked_in: "bg-blue-100 text-blue-700",
-  completed: "bg-emerald-100 text-emerald-700",
-  missed: "bg-red-100 text-red-700",
-  cancelled: "bg-stone-100 text-stone-400 line-through",
+export const STATUS_COLORS: Record<LiveStatus, { bg: string; fg: string }> = {
+  scheduled: { bg: "#F5F5F4", fg: "#57534E" },
+  checked_in: { bg: "#DBEAFE", fg: "#1D4ED8" },
+  completed: { bg: "#D1FAE5", fg: "#047857" },
+  missed: { bg: "#FEE2E2", fg: "#B91C1C" },
+  cancelled: { bg: "#F5F5F4", fg: "#A8A29E" },
 };
 
 export const STATUS_LABELS: Record<LiveStatus, string> = {

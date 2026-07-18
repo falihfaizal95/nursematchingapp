@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Harbor Home Care",
+    "slug": "harbor-home-care",
+    "scheme": "harbor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.harborhomecare.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Harbor verifies your location when you check in and out of a visit, so families and the agency can trust the visit happened at the patient's home.",
+        "NSCameraUsageDescription": "Harbor lets you photograph wound progress and care moments to share with the care team and family.",
+        "NSPhotoLibraryUsageDescription": "Harbor lets you attach photos from your library to a visit."
+      }
+    },
+    "android": {
+      "package": "com.harborhomecare.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d9488",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "CAMERA"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FBF7F1"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Harbor verifies your location when you check in and out of a visit."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Harbor lets you attach photos from your library to a visit.",
+          "cameraPermission": "Harbor lets you photograph wound progress and care moments during a visit."
+        }
+      ]
+    ]
+  }
+}

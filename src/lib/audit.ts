@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Records who did what, to what, and when — required for HIPAA-minded
-// access accountability. Call from every server action that reads or
-// mutates PHI-bearing tables (patients, visits, vitals, notes, photos...).
+// access accountability. Call from every mutation that touches PHI-bearing
+// tables (patients, visits, vitals, notes, photos...).
 export async function recordAudit(
   supabase: SupabaseClient,
   params: {

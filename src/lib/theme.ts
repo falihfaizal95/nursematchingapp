@@ -1,0 +1,33 @@
+export const colors = {
+  teal600: "#0d9488",
+  teal700: "#0f766e",
+  tealLight: "#CCFBF1",
+  tealBg: "#F0FDFA",
+  stone50: "#FAFAF9",
+  stone100: "#F5F5F4",
+  stone200: "#E7E5E4",
+  stone300: "#D6D3D1",
+  stone400: "#A8A29E",
+  stone500: "#78716C",
+  stone600: "#57534E",
+  stone700: "#44403C",
+  stone900: "#1C1917",
+  cream: "#FBF7F1",
+  red50: "#FEF2F2",
+  red100: "#FEE2E2",
+  red600: "#DC2626",
+  red700: "#B91C1C",
+  amber50: "#FFFBEB",
+  amber100: "#FEF3C7",
+  amber600: "#D97706",
+  amber700: "#B45309",
+  amber800: "#92400E",
+  blue100: "#DBEAFE",
+  blue700: "#1D4ED8",
+  emerald100: "#D1FAE5",
+  emerald700: "#047857",
+  white: "#FFFFFF",
+} as const;
+
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+export const radius = { sm: 8, md: 12, lg: 16, xl: 24, full: 999 } as const;
