@@ -114,12 +114,7 @@ function LiveStatusCard({ visit, caregiverName }: { visit: Visit; caregiverName?
         {caregiverName ?? "Your caregiver"} is on-site — clocked in since{" "}
         {new Date(visit.clock_in_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
       </div>
-      <iframe
-        title="Live caregiver location"
-        src={mapSrc}
-        className="h-64 w-full border-0"
-        loading="lazy"
-      />
+      <iframe title="Live caregiver location" src={mapSrc} className="h-64 w-full border-0" />
       {visit.location_updated_at && (
         <p className="px-4 py-2 text-xs text-stone-400">
           Location updated {new Date(visit.location_updated_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
