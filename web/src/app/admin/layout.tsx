@@ -14,14 +14,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="hidden w-60 flex-col border-r border-stone-200 bg-white px-4 py-6 md:flex">
+      <aside className="hidden w-60 flex-col border-r border-slate-200 bg-white px-4 py-6 md:flex">
         <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
             <HeartHandshake size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-stone-900">Harbor</p>
-            <p className="text-xs text-stone-500">Agency console</p>
+            <p className="text-sm font-semibold text-slate-900">Harbor</p>
+            <p className="text-xs text-slate-500">Agency console</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1">
@@ -29,18 +29,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
               <item.icon size={17} />
               {item.label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-stone-200 pt-4">
-          <p className="px-3 text-sm font-medium text-stone-900">{profile.full_name}</p>
-          <p className="px-3 text-xs text-stone-500">{profile.email}</p>
+        <div className="border-t border-slate-200 pt-4">
+          <p className="px-3 text-sm font-medium text-slate-900">{profile.full_name}</p>
+          <p className="px-3 text-xs text-slate-500">{profile.email}</p>
           <form action={signOut}>
-            <button className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm text-stone-500 hover:bg-stone-100">
+            <button className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-100">
               Sign out
             </button>
           </form>

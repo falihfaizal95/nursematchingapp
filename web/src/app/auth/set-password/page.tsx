@@ -37,15 +37,15 @@ export default function SetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-stone-50 px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h1 className="text-lg font-semibold text-stone-900">Welcome — set your password</h1>
+        <h1 className="text-lg font-semibold text-slate-900">Welcome — set your password</h1>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <div className="space-y-1">
-          <label htmlFor="password" className="text-sm font-medium text-stone-700">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700">
             New password
           </label>
           <input
@@ -55,13 +55,13 @@ export default function SetPasswordPage() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-teal-600 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-60"
+          className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
         >
           {loading ? "Saving..." : "Continue"}
         </button>

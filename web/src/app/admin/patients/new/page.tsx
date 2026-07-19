@@ -10,8 +10,8 @@ export default function NewPatientPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold text-stone-900">Add patient</h1>
-      <form action={action} className="space-y-4 rounded-xl border border-stone-200 bg-white p-6">
+      <h1 className="text-2xl font-semibold text-slate-900">Add patient</h1>
+      <form action={action} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
         <Field label="Full name" name="full_name" required />
         <Field label="Date of birth" name="date_of_birth" type="date" />
         <Field label="Address" name="address" required />
@@ -26,16 +26,16 @@ export default function NewPatientPage() {
           <Field label="Emergency contact phone" name="emergency_contact_phone" />
         </div>
         <div className="space-y-1">
-          <label className="text-sm font-medium text-stone-700">Notes</label>
+          <label className="text-sm font-medium text-slate-700">Notes</label>
           <textarea
             name="notes"
             rows={3}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           Create patient
         </button>
@@ -61,7 +61,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={name} className="text-sm font-medium text-stone-700">
+      <label htmlFor={name} className="text-sm font-medium text-slate-700">
         {label}
       </label>
       <input
@@ -70,9 +70,9 @@ function Field({
         type={type}
         step={step}
         required={required}
-        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
-      {hint && <p className="text-xs text-stone-400">{hint}</p>}
+      {hint && <p className="text-xs text-slate-400">{hint}</p>}
     </div>
   );
 }

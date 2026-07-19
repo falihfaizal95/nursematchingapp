@@ -4,23 +4,38 @@
    colors explicitly, so we force light rendering rather than following
    the OS color scheme. Without this, native form controls (inputs,
    scrollbars) render with browser dark-mode defaults that clash with
-   the app's white/cream backgrounds — most visibly, typed input text
-   turning near-white and unreadable. */
+   the app's light backgrounds — most visibly, typed input text turning
+   near-white and unreadable. */
 :root {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Soft pulse for the "live" indicator dot. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+  }
+}
+
+.live-dot {
+  animation: live-pulse 1.8s ease-out infinite;
 }

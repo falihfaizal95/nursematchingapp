@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Radio, Camera, Send } from "lucide-react";
+import { Camera, Send, MoonStar, NotebookPen, ImagePlus, MessageSquareText } from "lucide-react";
 import type { AppUser, Patient, PatientUpdate, Visit } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { addFamilyUpdate } from "@/lib/family-updates";
@@ -69,26 +69,41 @@ export function FamilyDashboard({
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm text-stone-500">Caring for</p>
-        <h1 className="text-2xl font-semibold text-stone-900">{patient.full_name}</h1>
-        {caregiver && <p className="text-sm text-stone-500">Caregiver: {caregiver.full_name}</p>}
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-xl font-bold text-white shadow-lg shadow-blue-600/20">
+          {patient.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Caring for</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{patient.full_name}</h1>
+          {caregiver && (
+            <p className="text-sm font-medium text-slate-500">with caregiver {caregiver.full_name}</p>
+          )}
+        </div>
       </div>
 
       {visit ? (
         <LiveStatusCard visit={visit} caregiverName={caregiver?.full_name} />
       ) : (
-        <div className="rounded-3xl border border-stone-200 bg-white p-5 text-center">
-          <p className="text-sm text-stone-500">No one is currently clocked in.</p>
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+            <MoonStar size={18} />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-slate-700">No one is on shift right now</p>
+            <p className="text-xs font-medium text-slate-400">
+              You&apos;ll see a live map here the moment {caregiver?.full_name ?? "the caregiver"} clocks in.
+            </p>
+          </div>
         </div>
       )}
 
       <AddUpdateForm patient={patient} profile={profile} onPosted={(u) => setFeed((prev) => [u, ...prev])} />
 
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-stone-900">Timeline</h2>
+        <h2 className="text-lg font-bold tracking-tight text-slate-900">Timeline</h2>
         {feed.length === 0 && (
-          <p className="rounded-2xl border border-stone-200 bg-white p-6 text-center text-sm text-stone-400">
+          <p className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-medium text-slate-400">
             Nothing here yet.
           </p>
         )}
@@ -108,16 +123,22 @@ function LiveStatusCard({ visit, caregiverName }: { visit: Visit; caregiverName?
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white">
-      <div className="flex items-center gap-2 bg-teal-600 px-4 py-2.5 text-sm font-medium text-white">
-        <Radio size={14} className="animate-pulse" />
-        {caregiverName ?? "Your caregiver"} is on-site — clocked in since{" "}
-        {new Date(visit.clock_in_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+    <div className="overflow-hidden rounded-2xl border border-emerald-200/60 bg-white shadow-lg shadow-emerald-600/10">
+      <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-3.5 text-white">
+        <span className="live-dot h-2.5 w-2.5 shrink-0 rounded-full bg-white" />
+        <p className="text-sm font-bold">
+          {caregiverName ?? "Your caregiver"} is on-site
+          <span className="ml-1.5 font-medium text-emerald-100">
+            since{" "}
+            {new Date(visit.clock_in_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+          </span>
+        </p>
       </div>
       <iframe title="Live caregiver location" src={mapSrc} className="h-64 w-full border-0" />
       {visit.location_updated_at && (
-        <p className="px-4 py-2 text-xs text-stone-400">
-          Location updated {new Date(visit.location_updated_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+        <p className="px-5 py-2.5 text-xs font-medium text-slate-400">
+          Location updated{" "}
+          {new Date(visit.location_updated_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
         </p>
       )}
     </div>
@@ -164,19 +185,18 @@ function AddUpdateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4">
-      <p className="text-sm font-medium text-stone-700">Add an update</p>
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={2}
-        placeholder="Medication taken, a photo, a quick note..."
-        className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+        placeholder={`Share an update about ${patient.full_name.split(" ")[0]} — medication taken, a photo, a note...`}
+        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-3 text-sm transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      <div className="flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-stone-500">
-          <Camera size={15} />
+      {error && <p className="mt-1 text-xs font-medium text-red-600">{error}</p>}
+      <div className="mt-2.5 flex items-center justify-between">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100">
+          <Camera size={15} className="text-blue-600" />
           {file ? file.name : "Attach photo"}
           <input
             ref={fileInputRef}
@@ -189,7 +209,7 @@ function AddUpdateForm({
         <button
           type="submit"
           disabled={posting || (!body.trim() && !file)}
-          className="flex items-center gap-1.5 rounded-full bg-teal-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white shadow-md shadow-blue-600/20 transition hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           <Send size={14} />
           {posting ? "Posting..." : "Post"}
@@ -199,18 +219,28 @@ function AddUpdateForm({
   );
 }
 
+const TYPE_META = {
+  shift_report: { label: "Shift report", icon: NotebookPen, chip: "bg-blue-50 text-blue-700" },
+  family_photo: { label: "Photo", icon: ImagePlus, chip: "bg-violet-50 text-violet-700" },
+  family_note: { label: "Note", icon: MessageSquareText, chip: "bg-amber-50 text-amber-700" },
+} as const;
+
 function UpdateCard({ update }: { update: UpdateRow }) {
-  const isReport = update.type === "shift_report";
+  const meta = TYPE_META[update.type] ?? TYPE_META.family_note;
+  const Icon = meta.icon;
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-stone-900">
-          {update.users?.full_name}
-          <span className="ml-1.5 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase text-stone-500">
-            {isReport ? "Shift report" : update.type === "family_photo" ? "Photo" : "Note"}
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="truncate text-sm font-bold text-slate-900">{update.users?.full_name}</p>
+          <span
+            className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${meta.chip}`}
+          >
+            <Icon size={10} />
+            {meta.label}
           </span>
-        </p>
-        <p className="text-xs text-stone-400">
+        </div>
+        <p className="shrink-0 text-xs font-medium text-slate-400">
           {new Date(update.created_at).toLocaleString(undefined, {
             month: "short",
             day: "numeric",
@@ -219,9 +249,9 @@ function UpdateCard({ update }: { update: UpdateRow }) {
           })}
         </p>
       </div>
-      {update.body && <p className="mt-1.5 text-sm text-stone-700">{update.body}</p>}
+      {update.body && <p className="mt-2 text-sm leading-relaxed text-slate-600">{update.body}</p>}
       {update.photo_path && (
-        <div className="mt-2">
+        <div className="mt-3">
           <PhotoThumb storagePath={update.photo_path} />
         </div>
       )}

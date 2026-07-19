@@ -23,18 +23,18 @@ export default async function AdminHome() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold text-stone-900">Active now</h1>
-        <p className="text-sm text-stone-500">Who&apos;s currently clocked in</p>
+        <h1 className="text-2xl font-semibold text-slate-900">Active now</h1>
+        <p className="text-sm text-slate-500">Who&apos;s currently clocked in</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <p className="text-2xl font-semibold text-stone-900">{rows.length}</p>
-          <p className="text-xs text-stone-500">Clocked in now</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-2xl font-semibold text-slate-900">{rows.length}</p>
+          <p className="text-xs text-slate-500">Clocked in now</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-4">
-          <p className="text-2xl font-semibold text-stone-900">{patients?.length ?? 0}</p>
-          <p className="text-xs text-stone-500">Total patients</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-2xl font-semibold text-slate-900">{patients?.length ?? 0}</p>
+          <p className="text-xs text-slate-500">Total patients</p>
         </div>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-2xl font-semibold text-amber-800">{unassigned?.length ?? 0}</p>
@@ -44,10 +44,10 @@ export default async function AdminHome() {
 
       <div className="space-y-3">
         {rows.map((row) => (
-          <div key={row.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-4">
+          <div key={row.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
             <div>
-              <p className="font-medium text-stone-900">{row.patients?.full_name}</p>
-              <p className="text-sm text-stone-500">{row.users?.full_name}</p>
+              <p className="font-medium text-slate-900">{row.patients?.full_name}</p>
+              <p className="text-sm text-slate-500">{row.users?.full_name}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-emerald-700">
@@ -62,7 +62,7 @@ export default async function AdminHome() {
           </div>
         ))}
         {rows.length === 0 && (
-          <p className="rounded-xl border border-dashed border-stone-300 py-8 text-center text-stone-400">
+          <p className="rounded-xl border border-dashed border-slate-300 py-8 text-center text-slate-400">
             No one is clocked in right now.
           </p>
         )}

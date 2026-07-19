@@ -13,7 +13,7 @@ export function PatientSwitcher({ patients }: { patients: Patient[] }) {
     <select
       value={current}
       onChange={(e) => router.push(`${pathname}?patient=${e.target.value}`)}
-      className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700"
+      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700"
     >
       {patients.map((p) => (
         <option key={p.id} value={p.id}>

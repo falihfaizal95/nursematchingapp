@@ -17,10 +17,10 @@ export default async function PatientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-stone-900">Patients</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Patients</h1>
         <Link
           href="/admin/patients/new"
-          className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-teal-700"
+          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <Plus size={16} /> Add patient
         </Link>
@@ -33,14 +33,14 @@ export default async function PatientsPage() {
             <Link
               key={p.id}
               href={`/admin/patients/${p.id}`}
-              className="rounded-xl border border-stone-200 bg-white p-4 transition hover:border-teal-300 hover:shadow-sm"
+              className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-300 hover:shadow-sm"
             >
-              <p className="font-medium text-stone-900">{p.full_name}</p>
-              <p className="mt-1 text-sm text-stone-500">{p.primary_condition || "No condition on file"}</p>
-              <p className="mt-2 text-xs text-stone-400">{p.address}</p>
+              <p className="font-medium text-slate-900">{p.full_name}</p>
+              <p className="mt-1 text-sm text-slate-500">{p.primary_condition || "No condition on file"}</p>
+              <p className="mt-2 text-xs text-slate-400">{p.address}</p>
               <p className="mt-2 text-xs font-medium">
                 {caregiver ? (
-                  <span className="text-teal-700">Caregiver: {caregiver.full_name}</span>
+                  <span className="text-blue-700">Caregiver: {caregiver.full_name}</span>
                 ) : (
                   <span className="text-amber-700">No caregiver assigned</span>
                 )}
@@ -49,7 +49,7 @@ export default async function PatientsPage() {
           );
         })}
         {(patients ?? []).length === 0 && (
-          <p className="col-span-full py-8 text-center text-stone-400">No patients yet.</p>
+          <p className="col-span-full py-8 text-center text-slate-400">No patients yet.</p>
         )}
       </div>
     </div>
