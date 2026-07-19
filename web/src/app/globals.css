@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
+/* This app is light-themed only — every element sets its own Tailwind
+   colors explicitly, so we force light rendering rather than following
+   the OS color scheme. Without this, native form controls (inputs,
+   scrollbars) render with browser dark-mode defaults that clash with
+   the app's white/cream backgrounds — most visibly, typed input text
+   turning near-white and unreadable. */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,13 +17,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
