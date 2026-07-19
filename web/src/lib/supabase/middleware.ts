@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
-  nurse: "/nurse",
+  caregiver: "/caregiver",
   family: "/family",
 };
 
@@ -64,9 +64,9 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Prevent cross-role access, e.g. a nurse hitting /admin/*.
+    // Prevent cross-role access, e.g. a caregiver hitting /admin/*.
     const section = path.split("/")[1];
-    if (home && ["admin", "nurse", "family"].includes(section) && `/${section}` !== home) {
+    if (home && ["admin", "caregiver", "family"].includes(section) && `/${section}` !== home) {
       const url = request.nextUrl.clone();
       url.pathname = home;
       return NextResponse.redirect(url);

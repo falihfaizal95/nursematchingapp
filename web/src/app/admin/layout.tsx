@@ -1,25 +1,12 @@
 import Link from "next/link";
-import {
-  HeartHandshake,
-  LayoutDashboard,
-  Users,
-  CalendarClock,
-  AlertTriangle,
-  BarChart3,
-  UserPlus,
-  Heart,
-} from "lucide-react";
+import { HeartHandshake, LayoutDashboard, Users, UserPlus } from "lucide-react";
 import { requireUser } from "@/lib/current-user";
 import { signOut } from "@/app/login/actions";
 
 const nav = [
-  { href: "/admin", label: "Live board", icon: LayoutDashboard },
+  { href: "/admin", label: "Active now", icon: LayoutDashboard },
   { href: "/admin/patients", label: "Patients", icon: Users },
-  { href: "/admin/schedule", label: "Schedule", icon: CalendarClock },
-  { href: "/admin/incidents", label: "Incidents", icon: AlertTriangle },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/nurses", label: "Nurses", icon: UserPlus },
-  { href: "/admin/families", label: "Families", icon: Heart },
+  { href: "/admin/caregivers", label: "Caregivers", icon: UserPlus },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -60,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</div>
+        <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
     </div>
   );

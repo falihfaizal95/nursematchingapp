@@ -1,5 +1,5 @@
-import { createPatient } from "@/lib/actions/admin-patients";
 import { redirect } from "next/navigation";
+import { createPatient } from "@/lib/actions/admin";
 
 export default function NewPatientPage() {
   async function action(formData: FormData) {
@@ -16,7 +16,7 @@ export default function NewPatientPage() {
         <Field label="Date of birth" name="date_of_birth" type="date" />
         <Field label="Address" name="address" required />
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Latitude" name="lat" type="number" step="any" required hint="Used to verify GPS check-in" />
+          <Field label="Latitude" name="lat" type="number" step="any" required hint="Used to verify GPS clock-in" />
           <Field label="Longitude" name="lng" type="number" step="any" required />
         </div>
         <Field label="Primary condition" name="primary_condition" />

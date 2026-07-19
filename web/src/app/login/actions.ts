@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
-  nurse: "/nurse",
+  caregiver: "/caregiver",
   family: "/family",
 };
 

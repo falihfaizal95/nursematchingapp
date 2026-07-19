@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Harbor Home Care",
-  description: "Real-time home care coordination for families, nurses, and agencies.",
+  description: "Real-time visibility for families — see when your caregiver arrives, where they are, and how your loved one is doing.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

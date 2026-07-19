@@ -1,21 +1,8 @@
-// Hand-maintained types mirroring supabase/migrations/0001_init.sql.
-// If you have the Supabase CLI linked, prefer `supabase gen types typescript`
-// to regenerate this from the live schema.
+// Hand-maintained types mirroring supabase/migrations/0002_family_first_rebuild.sql.
 
-export type UserRole = "admin" | "nurse" | "family";
-export type ShiftStatus = "scheduled" | "checked_in" | "completed" | "missed" | "cancelled";
-export type VisitStatus = "in_progress" | "completed" | "flagged";
-export type TaskCategory =
-  | "medication"
-  | "wound_care"
-  | "bathing"
-  | "meals"
-  | "mobility"
-  | "vitals"
-  | "other";
-export type IncidentType = "fall" | "refusal" | "medication_error" | "concern" | "other";
-export type IncidentSeverity = "low" | "medium" | "high" | "critical";
-export type IncidentStatus = "open" | "reviewed" | "resolved";
+export type UserRole = "admin" | "caregiver" | "family";
+export type VisitStatus = "active" | "completed";
+export type UpdateType = "shift_report" | "family_photo" | "family_note";
 
 export interface Agency {
   id: string;
@@ -47,6 +34,7 @@ export interface Patient {
   emergency_contact_phone: string | null;
   notes: string | null;
   photo_url: string | null;
+  caregiver_id: string | null;
   active: boolean;
   created_at: string;
 }
@@ -59,114 +47,36 @@ export interface FamilyLink {
   created_at: string;
 }
 
-export interface CarePlan {
-  id: string;
-  agency_id: string;
-  patient_id: string;
-  title: string;
-  active: boolean;
-  created_at: string;
-}
-
-export interface CareTask {
-  id: string;
-  care_plan_id: string;
-  label: string;
-  category: TaskCategory;
-  instructions: string | null;
-  sort_order: number;
-  created_at: string;
-}
-
-export interface Shift {
-  id: string;
-  agency_id: string;
-  patient_id: string;
-  nurse_id: string;
-  start_time: string;
-  end_time: string;
-  status: ShiftStatus;
-  created_at: string;
-}
-
 export interface Visit {
   id: string;
   agency_id: string;
-  shift_id: string;
   patient_id: string;
-  nurse_id: string;
-  check_in_at: string | null;
-  check_in_lat: number | null;
-  check_in_lng: number | null;
-  check_in_flagged: boolean;
-  check_in_distance_m: number | null;
-  check_out_at: string | null;
-  check_out_lat: number | null;
-  check_out_lng: number | null;
+  caregiver_id: string;
+  clock_in_at: string;
+  clock_in_lat: number;
+  clock_in_lng: number;
+  clock_in_flagged: boolean;
+  clock_in_distance_m: number | null;
+  current_lat: number | null;
+  current_lng: number | null;
+  location_updated_at: string | null;
+  clock_out_at: string | null;
+  clock_out_lat: number | null;
+  clock_out_lng: number | null;
+  report: string | null;
   status: VisitStatus;
   created_at: string;
 }
 
-export interface VisitTask {
-  id: string;
-  visit_id: string;
-  care_task_id: string;
-  completed: boolean;
-  completed_at: string | null;
-  notes: string | null;
-}
-
-export interface Vitals {
-  id: string;
-  visit_id: string;
-  patient_id: string;
-  bp_systolic: number | null;
-  bp_diastolic: number | null;
-  heart_rate: number | null;
-  glucose: number | null;
-  temperature: number | null;
-  pain_level: number | null;
-  mood: string | null;
-  recorded_at: string;
-}
-
-export interface VisitNote {
-  id: string;
-  visit_id: string;
-  summary: string;
-  body: string | null;
-  created_at: string;
-}
-
-export interface Photo {
-  id: string;
-  visit_id: string;
-  patient_id: string;
-  storage_path: string;
-  category: string | null;
-  caption: string | null;
-  created_at: string;
-}
-
-export interface Incident {
+export interface PatientUpdate {
   id: string;
   agency_id: string;
   patient_id: string;
-  nurse_id: string;
   visit_id: string | null;
-  type: IncidentType;
-  severity: IncidentSeverity;
-  description: string;
-  status: IncidentStatus;
-  created_at: string;
-}
-
-export interface Message {
-  id: string;
-  agency_id: string;
-  patient_id: string;
-  sender_id: string;
-  body: string;
+  author_id: string;
+  type: UpdateType;
+  body: string | null;
+  photo_path: string | null;
   created_at: string;
 }
 

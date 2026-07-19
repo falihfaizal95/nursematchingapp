@@ -1,6 +1,8 @@
-// Seeds a demo agency: 1 admin, 3 nurses, 4 patients with care plans,
-// 2 family accounts, and ~2 weeks of completed visits + vitals so the
-// family dashboard charts have something to show.
+// Seeds a demo agency: 1 admin, 4 patients, 3 caregivers each assigned
+// 1:1 to a patient (one patient left unassigned on purpose), 2 family
+// accounts, ~10 days of completed visits with end-of-day reports so the
+// family timeline has content, plus one currently-active visit so the
+// live map/status has something to show immediately.
 //
 // Usage: npm run seed (from the repo root)
 // Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (from .env.local at
@@ -39,8 +41,38 @@ async function createAuthUser(email: string, fullName: string) {
   return data.user.id;
 }
 
+const REPORTS = [
+  "Stable day. Meds given on time, ate a full lunch, took an afternoon walk in the garden.",
+  "Good spirits today. Watched a movie together, had a light appetite at dinner but drank plenty of water.",
+  "Quiet day, mostly resting. No concerns — vitals looked normal when I checked in on them.",
+  "A little more tired than usual this morning but perked up after breakfast. No issues otherwise.",
+];
+
+// Auth accounts from a previous seed run survive a schema reset (dropping
+// public.users doesn't touch auth.users), so re-running this script would
+// otherwise fail on "email already registered." Clear out old @harborcare.demo
+// accounts first to keep this safely re-runnable.
+async function deleteExistingDemoUsers() {
+  let page = 1;
+  const toDelete: string[] = [];
+  for (;;) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    for (const u of data.users) {
+      if (u.email?.endsWith("@harborcare.demo")) toDelete.push(u.id);
+    }
+    if (data.users.length < 200) break;
+    page++;
+  }
+  for (const id of toDelete) {
+    await supabase.auth.admin.deleteUser(id);
+  }
+  if (toDelete.length) console.log(`Removed ${toDelete.length} demo account(s) from a previous seed run.`);
+}
+
 async function main() {
   console.log("Seeding Harbor Home Care demo data...");
+  await deleteExistingDemoUsers();
 
   const { data: agency, error: agencyError } = await supabase
     .from("agencies")
@@ -50,7 +82,7 @@ async function main() {
   if (agencyError) throw agencyError;
   const agencyId = agency.id as string;
 
-  // --- Admin -----------------------------------------------------------
+  // --- Admin ---------------------------------------------------------------
   const adminId = await createAuthUser("admin@harborcare.demo", "Alex Rivera");
   await supabase.from("users").insert({
     id: adminId,
@@ -60,26 +92,26 @@ async function main() {
     email: "admin@harborcare.demo",
   });
 
-  // --- Nurses ------------------------------------------------------------
-  const nurseNames = ["Jordan Blake", "Priya Nair", "Marcus Webb"];
-  const nurseIds: string[] = [];
-  for (let i = 0; i < nurseNames.length; i++) {
-    const email = `nurse${i + 1}@harborcare.demo`;
-    const id = await createAuthUser(email, nurseNames[i]);
+  // --- Caregivers ------------------------------------------------------------
+  const caregiverNames = ["Jordan Blake", "Priya Nair", "Marcus Webb"];
+  const caregiverIds: string[] = [];
+  for (let i = 0; i < caregiverNames.length; i++) {
+    const email = `caregiver${i + 1}@harborcare.demo`;
+    const id = await createAuthUser(email, caregiverNames[i]);
     await supabase.from("users").insert({
       id,
       agency_id: agencyId,
-      role: "nurse",
-      full_name: nurseNames[i],
+      role: "caregiver",
+      full_name: caregiverNames[i],
       email,
       phone: `555-010${i}`,
     });
-    nurseIds.push(id);
+    caregiverIds.push(id);
   }
 
-  // --- Patients ------------------------------------------------------------
+  // --- Patients --------------------------------------------------------------
   // Coordinates clustered around a sample metro area (Atlanta, GA) so
-  // GPS check-in distance checks have realistic values.
+  // GPS distance checks have realistic values.
   const patientDefs = [
     {
       full_name: "Eleanor Whitfield",
@@ -91,6 +123,7 @@ async function main() {
       allergies: "Penicillin",
       emergency_contact_name: "Susan Whitfield",
       emergency_contact_phone: "555-0201",
+      caregiverIndex: 0,
     },
     {
       full_name: "Harold Jennings",
@@ -102,17 +135,19 @@ async function main() {
       allergies: "None known",
       emergency_contact_name: "Diane Jennings",
       emergency_contact_phone: "555-0202",
+      caregiverIndex: 1,
     },
     {
       full_name: "Rosa Delgado",
       date_of_birth: "1950-06-21",
       address: "301 Highland Ave, Atlanta, GA 30312",
-      lat: 33.7550,
-      lng: -84.3650,
+      lat: 33.755,
+      lng: -84.365,
       primary_condition: "Post-hip replacement recovery",
       allergies: "Latex",
       emergency_contact_name: "Miguel Delgado",
       emergency_contact_phone: "555-0203",
+      caregiverIndex: 2,
     },
     {
       full_name: "Walter Simms",
@@ -124,70 +159,32 @@ async function main() {
       allergies: "Sulfa drugs",
       emergency_contact_name: "Barbara Simms",
       emergency_contact_phone: "555-0204",
+      caregiverIndex: null, // left unassigned on purpose
     },
   ];
 
   const patientIds: string[] = [];
   for (const def of patientDefs) {
+    const { caregiverIndex, ...rest } = def;
     const { data: patient, error } = await supabase
       .from("patients")
-      .insert({ agency_id: agencyId, ...def })
+      .insert({
+        agency_id: agencyId,
+        ...rest,
+        caregiver_id: caregiverIndex !== null ? caregiverIds[caregiverIndex] : null,
+      })
       .select("id")
       .single();
     if (error) throw error;
     patientIds.push(patient.id);
   }
 
-  // --- Care plans + tasks ------------------------------------------------
-  const taskSets: { label: string; category: string; instructions?: string }[][] = [
-    [
-      { label: "Check blood pressure and heart rate", category: "vitals" },
-      { label: "Administer morning medications", category: "medication", instructions: "See med list in binder" },
-      { label: "Assist with bathing", category: "bathing" },
-      { label: "Prepare light breakfast", category: "meals" },
-    ],
-    [
-      { label: "Check blood glucose", category: "vitals" },
-      { label: "Administer insulin per sliding scale", category: "medication" },
-      { label: "Assist with mobility exercises", category: "mobility" },
-      { label: "Prepare diabetic-friendly lunch", category: "meals" },
-    ],
-    [
-      { label: "Wound care — hip incision site", category: "wound_care", instructions: "Change dressing, check for redness" },
-      { label: "Assist with physical therapy exercises", category: "mobility" },
-      { label: "Check vitals", category: "vitals" },
-    ],
-    [
-      { label: "Assist with mobility and fall-risk supervision", category: "mobility" },
-      { label: "Administer medications", category: "medication" },
-      { label: "Check vitals and tremor notes", category: "vitals" },
-      { label: "Prepare meals", category: "meals" },
-    ],
-  ];
-
-  const carePlanIdsByPatient: Record<string, string> = {};
-  const careTasksByPatient: Record<string, string[]> = {};
-
-  for (let i = 0; i < patientIds.length; i++) {
-    const { data: plan, error } = await supabase
-      .from("care_plans")
-      .insert({ agency_id: agencyId, patient_id: patientIds[i], title: "Daily Care Plan" })
-      .select("id")
-      .single();
-    if (error) throw error;
-    carePlanIdsByPatient[patientIds[i]] = plan.id;
-
-    const tasks = taskSets[i].map((t, idx) => ({ care_plan_id: plan.id, sort_order: idx, ...t }));
-    const { data: insertedTasks, error: taskError } = await supabase.from("care_tasks").insert(tasks).select("id");
-    if (taskError) throw taskError;
-    careTasksByPatient[patientIds[i]] = insertedTasks.map((t) => t.id);
-  }
-
-  // --- Family accounts -----------------------------------------------------
+  // --- Family accounts ---------------------------------------------------
   const familyDefs = [
     { email: "family1@harborcare.demo", full_name: "Susan Whitfield", relationship: "Daughter", patientIndex: 0 },
     { email: "family2@harborcare.demo", full_name: "Diane Jennings", relationship: "Spouse", patientIndex: 1 },
   ];
+  const familyIds: string[] = [];
   for (const f of familyDefs) {
     const id = await createAuthUser(f.email, f.full_name);
     await supabase.from("users").insert({
@@ -202,122 +199,97 @@ async function main() {
       family_user_id: id,
       relationship: f.relationship,
     });
+    familyIds.push(id);
   }
 
-  // --- Shifts + visits + vitals for the past 2 weeks ----------------------
+  // --- ~10 days of completed visits + end-of-day reports ------------------
   const now = new Date();
-  for (let p = 0; p < patientIds.length; p++) {
+  for (let p = 0; p < patientDefs.length; p++) {
+    const def = patientDefs[p];
+    if (def.caregiverIndex === null) continue;
     const patientId = patientIds[p];
-    const nurseId = nurseIds[p % nurseIds.length];
-    const taskIds = careTasksByPatient[patientId];
+    const caregiverId = caregiverIds[def.caregiverIndex];
 
-    for (let daysAgo = 14; daysAgo >= 1; daysAgo--) {
+    for (let daysAgo = 10; daysAgo >= 1; daysAgo--) {
       const day = new Date(now);
       day.setDate(day.getDate() - daysAgo);
-      const start = new Date(day);
-      start.setHours(9, 0, 0, 0);
-      const end = new Date(day);
-      end.setHours(11, 0, 0, 0);
-
-      const { data: shift, error: shiftError } = await supabase
-        .from("shifts")
-        .insert({
-          agency_id: agencyId,
-          patient_id: patientId,
-          nurse_id: nurseId,
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-          status: "completed",
-        })
-        .select("id")
-        .single();
-      if (shiftError) throw shiftError;
-
-      const checkIn = new Date(start.getTime() + 2 * 60_000);
-      const checkOut = new Date(end.getTime() - 5 * 60_000);
-      const patientDef = patientDefs[p];
+      const clockIn = new Date(day);
+      clockIn.setHours(9, Math.floor(Math.random() * 10), 0, 0);
+      const clockOut = new Date(clockIn);
+      clockOut.setHours(clockIn.getHours() + 2, clockIn.getMinutes() + 30, 0, 0);
+      const report = REPORTS[Math.floor(Math.random() * REPORTS.length)];
 
       const { data: visit, error: visitError } = await supabase
         .from("visits")
         .insert({
           agency_id: agencyId,
-          shift_id: shift.id,
           patient_id: patientId,
-          nurse_id: nurseId,
-          check_in_at: checkIn.toISOString(),
-          check_in_lat: patientDef.lat,
-          check_in_lng: patientDef.lng,
-          check_in_flagged: false,
-          check_in_distance_m: Math.round(Math.random() * 20),
-          check_out_at: checkOut.toISOString(),
-          check_out_lat: patientDef.lat,
-          check_out_lng: patientDef.lng,
+          caregiver_id: caregiverId,
+          clock_in_at: clockIn.toISOString(),
+          clock_in_lat: def.lat,
+          clock_in_lng: def.lng,
+          clock_in_flagged: false,
+          clock_in_distance_m: Math.round(Math.random() * 20),
+          clock_out_at: clockOut.toISOString(),
+          clock_out_lat: def.lat,
+          clock_out_lng: def.lng,
+          report,
           status: "completed",
         })
         .select("id")
         .single();
       if (visitError) throw visitError;
 
-      await supabase
-        .from("visit_tasks")
-        .insert(taskIds.map((care_task_id) => ({ visit_id: visit.id, care_task_id, completed: true, completed_at: checkOut.toISOString() })));
-
-      await supabase.from("vitals").insert({
-        visit_id: visit.id,
+      await supabase.from("patient_updates").insert({
+        agency_id: agencyId,
         patient_id: patientId,
-        bp_systolic: 118 + Math.round(Math.random() * 20 - 10),
-        bp_diastolic: 76 + Math.round(Math.random() * 10 - 5),
-        heart_rate: 70 + Math.round(Math.random() * 16 - 8),
-        glucose: 95 + Math.round(Math.random() * 40 - 20),
-        temperature: (98.6 + (Math.random() - 0.5)).toFixed(1),
-        pain_level: Math.max(0, Math.round(Math.random() * 4)),
-        mood: ["content", "cheerful", "tired", "content"][Math.floor(Math.random() * 4)],
-        recorded_at: checkIn.toISOString(),
-      });
-
-      await supabase.from("visit_notes").insert({
         visit_id: visit.id,
-        summary: "Stable visit — all care tasks completed without issue.",
-        body: "Patient in good spirits. Vitals within normal range. No concerns to report.",
+        author_id: caregiverId,
+        type: "shift_report",
+        body: report,
+        created_at: clockOut.toISOString(),
       });
     }
 
-    // Upcoming shift for today + tomorrow so the live board / calendar aren't empty.
-    for (const offset of [0, 1]) {
-      const day = new Date(now);
-      day.setDate(day.getDate() + offset);
-      const start = new Date(day);
-      start.setHours(9, 0, 0, 0);
-      const end = new Date(day);
-      end.setHours(11, 0, 0, 0);
-      if (start < now) continue;
-
-      await supabase.from("shifts").insert({
+    // A couple of family-posted updates for realism, if this patient has family linked.
+    const familyIndex = familyDefs.findIndex((f) => f.patientIndex === p);
+    if (familyIndex >= 0) {
+      const twoDaysAgo = new Date(now);
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      await supabase.from("patient_updates").insert({
         agency_id: agencyId,
         patient_id: patientId,
-        nurse_id: nurseId,
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-        status: "scheduled",
+        author_id: familyIds[familyIndex],
+        type: "family_note",
+        body: "Dropped off her favorite soup — please let her know it's in the fridge!",
+        created_at: twoDaysAgo.toISOString(),
       });
     }
   }
 
-  // --- One open incident for realism --------------------------------------
-  await supabase.from("incidents").insert({
+  // --- One active visit right now, so the live map/status isn't empty -----
+  const liveDef = patientDefs[0];
+  const clockInNow = new Date(now.getTime() - 55 * 60_000);
+  await supabase.from("visits").insert({
     agency_id: agencyId,
-    patient_id: patientIds[2],
-    nurse_id: nurseIds[2 % nurseIds.length],
-    type: "concern",
-    severity: "low",
-    description: "Patient mentioned mild dizziness when standing. Advised to rise slowly; will monitor next visit.",
+    patient_id: patientIds[0],
+    caregiver_id: caregiverIds[0],
+    clock_in_at: clockInNow.toISOString(),
+    clock_in_lat: liveDef.lat,
+    clock_in_lng: liveDef.lng,
+    clock_in_flagged: false,
+    clock_in_distance_m: 4,
+    current_lat: liveDef.lat + 0.0006,
+    current_lng: liveDef.lng - 0.0004,
+    location_updated_at: new Date(now.getTime() - 2 * 60_000).toISOString(),
+    status: "active",
   });
 
   console.log("\nDone. Demo accounts (all use the same password):\n");
   console.log(`  Password: ${DEMO_PASSWORD}\n`);
-  console.log("  Admin:   admin@harborcare.demo");
-  console.log("  Nurses:  nurse1@harborcare.demo, nurse2@harborcare.demo, nurse3@harborcare.demo");
-  console.log("  Family:  family1@harborcare.demo (Eleanor Whitfield), family2@harborcare.demo (Harold Jennings)\n");
+  console.log("  Admin:      admin@harborcare.demo");
+  console.log("  Caregivers: caregiver1@harborcare.demo, caregiver2@harborcare.demo, caregiver3@harborcare.demo");
+  console.log("  Family:     family1@harborcare.demo (Eleanor Whitfield — currently clocked in!), family2@harborcare.demo (Harold Jennings)\n");
 }
 
 main().catch((err) => {

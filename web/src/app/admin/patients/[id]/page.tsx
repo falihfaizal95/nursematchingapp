@@ -1,13 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
-import {
-  createCarePlan,
-  addCareTask,
-  deleteCareTask,
-} from "@/lib/actions/admin-patients";
-import { inviteFamily } from "@/lib/actions/admin-people";
-import { Trash2 } from "lucide-react";
-import type { CarePlan, CareTask, FamilyLink, AppUser } from "@/lib/types";
+import { assignCaregiver } from "@/lib/actions/admin";
+import { inviteFamily } from "@/lib/actions/admin";
+import type { AppUser, FamilyLink } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -23,29 +18,24 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
     .single();
   if (!patient) notFound();
 
-  const [{ data: carePlans }, { data: familyLinks }, { data: recentVisits }] = await Promise.all([
-    supabase
-      .from("care_plans")
-      .select("*, care_tasks(*)")
-      .eq("patient_id", id)
-      .order("created_at"),
+  const [{ data: caregivers }, { data: familyLinks }, { data: recentUpdates }] = await Promise.all([
+    supabase.from("users").select("*").eq("agency_id", profile.agency_id).eq("role", "caregiver").order("full_name"),
     supabase.from("family_links").select("*, users(*)").eq("patient_id", id),
     supabase
-      .from("visits")
-      .select("*, users!visits_nurse_id_fkey(full_name), visit_notes(summary)")
+      .from("patient_updates")
+      .select("*, users(full_name)")
       .eq("patient_id", id)
-      .order("check_in_at", { ascending: false })
-      .limit(5),
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
-  type PlanRow = CarePlan & { care_tasks: CareTask[] };
-  const plans = (carePlans ?? []) as unknown as PlanRow[];
   type LinkRow = FamilyLink & { users: AppUser };
   const links = (familyLinks ?? []) as unknown as LinkRow[];
 
-  async function addPlanAction(formData: FormData) {
+  async function assignAction(formData: FormData) {
     "use server";
-    await createCarePlan(id, String(formData.get("title") || "Care plan"));
+    const caregiverId = String(formData.get("caregiver_id") || "") || null;
+    await assignCaregiver(id, caregiverId);
   }
 
   return (
@@ -74,78 +64,33 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         )}
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-stone-900">Care plans</h2>
-        {plans.map((plan) => (
-          <div key={plan.id} className="rounded-xl border border-stone-200 bg-white p-5">
-            <h3 className="font-medium text-stone-900">{plan.title}</h3>
-            <ul className="mt-3 divide-y divide-stone-100">
-              {plan.care_tasks
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map((task) => (
-                  <li key={task.id} className="flex items-center justify-between py-2 text-sm">
-                    <div>
-                      <span className="font-medium text-stone-800">{task.label}</span>{" "}
-                      <span className="text-xs uppercase tracking-wide text-stone-400">{task.category}</span>
-                      {task.instructions && <p className="text-xs text-stone-500">{task.instructions}</p>}
-                    </div>
-                    <form
-                      action={async () => {
-                        "use server";
-                        await deleteCareTask(task.id, id);
-                      }}
-                    >
-                      <button className="text-stone-300 hover:text-red-500">
-                        <Trash2 size={15} />
-                      </button>
-                    </form>
-                  </li>
-                ))}
-              {plan.care_tasks.length === 0 && (
-                <li className="py-2 text-sm text-stone-400">No tasks yet.</li>
-              )}
-            </ul>
-
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                await addCareTask(plan.id, id, formData);
-              }}
-              className="mt-4 flex flex-wrap items-end gap-2 border-t border-stone-100 pt-4"
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-stone-900">Caregiver</h2>
+        <form action={assignAction} className="flex items-end gap-2 rounded-xl border border-stone-200 bg-white p-4">
+          <div className="flex-1 space-y-1">
+            <label className="text-sm font-medium text-stone-700">Assigned caregiver</label>
+            <select
+              name="caregiver_id"
+              defaultValue={patient.caregiver_id ?? ""}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             >
-              <input
-                name="label"
-                placeholder="Task label (e.g. Give morning meds)"
-                required
-                className="min-w-[220px] flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
-              />
-              <select name="category" className="rounded-lg border border-stone-300 px-2 py-1.5 text-sm">
-                <option value="medication">Medication</option>
-                <option value="wound_care">Wound care</option>
-                <option value="bathing">Bathing</option>
-                <option value="meals">Meals</option>
-                <option value="mobility">Mobility</option>
-                <option value="vitals">Vitals</option>
-                <option value="other">Other</option>
-              </select>
-              <button className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-700">
-                Add task
-              </button>
-            </form>
+              <option value="">Unassigned</option>
+              {(caregivers ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.full_name}
+                </option>
+              ))}
+            </select>
           </div>
-        ))}
-
-        <form action={addPlanAction} className="flex items-end gap-2 rounded-xl border border-dashed border-stone-300 p-4">
-          <input
-            name="title"
-            placeholder="New care plan title (e.g. Daily Care Plan)"
-            required
-            className="min-w-[220px] flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm"
-          />
-          <button className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-700">
-            Add care plan
+          <button className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700">
+            Save
           </button>
         </form>
+        {(caregivers ?? []).length === 0 && (
+          <p className="text-xs text-stone-400">
+            No caregivers yet — invite one from the Caregivers page first.
+          </p>
+        )}
       </section>
 
       <section className="space-y-3">
@@ -181,39 +126,22 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-stone-900">Recent visits</h2>
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
-              <tr>
-                <th className="px-4 py-3">When</th>
-                <th className="px-4 py-3">Nurse</th>
-                <th className="px-4 py-3">Summary</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(recentVisits ?? []).map((v) => (
-                <tr key={v.id} className="border-t border-stone-100">
-                  <td className="px-4 py-3 text-stone-600">
-                    {v.check_in_at ? new Date(v.check_in_at).toLocaleString() : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {(v as unknown as { users: { full_name: string } }).users?.full_name}
-                  </td>
-                  <td className="px-4 py-3 text-stone-600">
-                    {(v as unknown as { visit_notes: { summary: string }[] }).visit_notes?.[0]?.summary || "—"}
-                  </td>
-                </tr>
-              ))}
-              {(recentVisits ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-stone-400">
-                    No visits yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <h2 className="text-lg font-semibold text-stone-900">Recent timeline</h2>
+        <div className="space-y-2">
+          {(recentUpdates ?? []).map((u) => (
+            <div key={u.id} className="rounded-xl border border-stone-200 bg-white p-3 text-sm">
+              <p className="font-medium text-stone-800">
+                {(u as unknown as { users: { full_name: string } }).users?.full_name}{" "}
+                <span className="text-xs text-stone-400">
+                  · {new Date(u.created_at).toLocaleString()}
+                </span>
+              </p>
+              {u.body && <p className="mt-1 text-stone-600">{u.body}</p>}
+            </div>
+          ))}
+          {(recentUpdates ?? []).length === 0 && (
+            <p className="text-sm text-stone-400">No updates yet.</p>
+          )}
         </div>
       </section>
     </div>

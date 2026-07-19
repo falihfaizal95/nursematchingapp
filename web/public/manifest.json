@@ -1,8 +1,8 @@
 {
   "name": "Harbor Home Care",
   "short_name": "Harbor",
-  "description": "Run your home care visits — check in, chart, and check out.",
-  "start_url": "/nurse",
+  "description": "See your loved one's care in real time — live location, updates, and photos while your caregiver is on shift.",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FBF7F1",

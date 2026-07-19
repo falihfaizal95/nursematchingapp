@@ -1,53 +1,55 @@
 # Harbor Home Care
 
-A home care coordination platform. A private home care agency places
-nurses/caregivers with patients in their homes; the agency bills families
-hourly and pays caregivers, keeping the spread. This repo is the agency's
-operating system: real-time visibility for families, a fast one-handed
-tool for nurses in the field, and a live operations dashboard for the
-agency.
+A family-first home care transparency app. A caregiver is assigned to
+exactly one patient. While they're clocked in, the patient's family can
+watch a live "Find My"-style map of the caregiver's location, and see a
+shared timeline of the caregiver's end-of-day reports plus the family's
+own photo updates (medication taken, a meal, anything). The pitch is
+trust and visibility for the family — everything else is deliberately
+minimal.
 
-This is a monorepo with **two clients sharing one Supabase backend**:
+> **Status:** `web/` reflects this product as of the family-first rebuild.
+> `mobile/` (Expo) still targets the *previous*, much broader schema
+> (multi-patient scheduling, vitals, care plans, incidents) and will not
+> run against the current database until it's rebuilt to match — that
+> hasn't happened yet.
 
 ```
 supabase/       Postgres schema + RLS policies + the invite-user Edge Function
-scripts/        seed.ts — one shared demo-data script for both apps
-mobile/         Expo (React Native) app — install on a phone, iOS/Android
-web/            Next.js app — installable as a PWA, or just used in a browser
+scripts/        seed.ts — shared demo-data script
+mobile/         Expo (React Native) app — OUT OF SYNC, see status note above
+web/            Next.js app — the current, family-first product
 ```
 
-Same tables, same RLS policies, same rules about who can see what — a
-nurse, family member, or admin gets an equivalent experience whichever
-client they're on. Pick whichever fits how you want to ship: `mobile/` if
-you want App Store / Play Store presence and the best on-device GPS/camera
-experience; `web/` if you want something you can ship today with a link,
-no store review, installable to a home screen as a PWA.
+## The three roles
 
-- **Nurse** — today's schedule, GPS-verified check-in, care-plan checklist,
-  vitals, structured visit notes, camera photos, GPS check-out, and an
-  incident report form that flags admin immediately.
-- **Family** — latest visit summary, vitals trend charts, photo timeline,
-  upcoming visit calendar, a weekly "care score," and a message thread with
-  the agency. Read-only except for messaging.
-- **Admin** — patients, care plans, nurses, scheduling, a live board of
-  today's visits (scheduled / checked-in / completed / missed), incident
-  review, family invites, and hours-delivered reporting.
+- **Family** — the primary user. Sees a live map while their assigned
+  caregiver is clocked in, reads the caregiver's end-of-day reports, and
+  can post their own updates (a photo of medication taken, a quick note)
+  to a shared timeline for that patient.
+- **Caregiver** — assigned to exactly one patient, ongoing (no shift
+  scheduling). Clocks in (starts sharing live location), and must submit
+  a short end-of-day report before they're allowed to clock out.
+- **Admin** — creates patients, assigns one caregiver to each, invites
+  family members, and can see who's currently clocked in across the
+  agency. Deliberately thin — this app isn't primarily an ops dashboard.
 
 ## Setup
 
-### 1. Supabase project (shared by both apps)
+### 1. Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
 2. Run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-   in the SQL Editor — creates every table, `agency_id`-scoped RLS
-   policies, and the private `visit-photos` storage bucket.
-3. Deploy the invite function (needed for the mobile app's admin-invite
-   flow — see [Inviting nurses and family](#inviting-nurses-and-family-members) below):
+   **then** [`supabase/migrations/0002_family_first_rebuild.sql`](supabase/migrations/0002_family_first_rebuild.sql)
+   in the SQL Editor, in that order. The second migration drops the
+   original broad schema and replaces it with the lean one described
+   below — if you already ran 0001 on a project with demo data in it,
+   0002 wipes that data (re-seed after).
+3. Deploy the invite function (used by `mobile/`, once it's rebuilt to
+   match; harmless to deploy now regardless):
    ```bash
    npx supabase functions deploy invite-user
    ```
-   No manual secrets needed — the platform provides `SUPABASE_URL` and
-   `SUPABASE_SERVICE_ROLE_KEY` to every Edge Function automatically.
 
 ### 2. Seed demo data (once, from the repo root)
 
@@ -57,24 +59,15 @@ npm install
 npm run seed
 ```
 
-Creates one agency, one admin, three nurses, four patients with realistic
-care plans, two family accounts, and two weeks of completed visits with
-vitals. Prints the demo login for all seeded accounts.
+Creates one agency, one admin, three caregivers each assigned to one
+patient (a fourth patient is left unassigned on purpose, to show that
+state in the admin UI), two family accounts, ~10 days of completed visits
+with end-of-day reports, and one **currently active** visit so the live
+map has something to show the moment you sign in. The script is safe to
+re-run — it clears out its own `@harborcare.demo` accounts first. Prints
+the shared demo password at the end.
 
-### 3. Run the mobile app
-
-```bash
-cd mobile
-cp .env.example .env.local   # fill in EXPO_PUBLIC_SUPABASE_URL + EXPO_PUBLIC_SUPABASE_ANON_KEY
-npm install
-npx expo start
-```
-
-Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a
-simulator. For a real installable build, see
-[Building a real installable app](#building-a-real-installable-mobile-app) below.
-
-### 4. Run the web app
+### 3. Run the web app
 
 ```bash
 cd web
@@ -83,45 +76,29 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. On a phone, "Add to Home Screen" installs it
-as a standalone PWA (`web/public/manifest.json`).
+Open `http://localhost:3000`. On a phone, "Add to Home Screen" installs
+it as a standalone PWA.
 
-## Inviting nurses and family members
+## The caregiver flow
 
-Each app handles this the way that fits its own hosting model — same
-tables (`users`, `family_links`), same audit trail, different transport:
+1. Clock in (one tap; requests location once) → starts sharing live
+   location with family, no scheduling/expected-time check in this MVP.
+2. Nothing else is required during the shift — no checklist, no vitals.
+3. Before clock-out is allowed, they submit a free-text **end-of-day
+   report** — this becomes a `shift_report` entry on the patient's shared
+   timeline.
+4. Clock out → location sharing stops immediately. `current_lat`/`lng` is
+   cleared, not archived — no location trail persists after the shift.
 
-- **Web** ([`web/src/lib/actions/admin-people.ts`](web/src/lib/actions/admin-people.ts)) —
-  a Next.js server action calls `supabase.auth.admin.inviteUserByEmail`,
-  which sends a real email with a magic link back to `/auth/callback` on
-  the deployed site. This is the nicer flow, and web has a real URL to
-  link back to.
-- **Mobile** ([`supabase/functions/invite-user`](supabase/functions/invite-user)) —
-  there's no website to deep-link back to, so the Edge Function creates
-  the account with a random temporary password and returns it once. The
-  admin shares it directly (text, call, in person); the new nurse/family
-  member signs in and sets a real password from their profile screen.
+## The family flow
 
-Both are admin-only, both write the same `users` row and `audit_log`
-entry, both are safe to use interchangeably — an admin using the web app
-can invite someone who then only ever uses the mobile app, and vice versa.
-
-## Building a real installable mobile app
-
-Expo Go covers development. For a real device install or store
-submission, use EAS from inside `mobile/`:
-
-```bash
-npm install -g eas-cli
-eas login
-eas build:configure
-eas build --profile preview --platform ios      # or android
-```
-
-Set `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` as EAS
-project environment variables (`eas env:create`) so they're present at
-build time. See [Expo's EAS Build docs](https://docs.expo.dev/build/introduction/)
-for store submission (`eas submit`).
+- A live map (OpenStreetMap embed, no API key needed) shows the
+  caregiver's current position while a visit is active, updated in real
+  time via a Supabase Realtime subscription — no page refresh needed.
+- A shared timeline per patient: caregiver end-of-day reports and the
+  family's own photo/note updates, newest first, also live via Realtime.
+- Family can post a photo + caption (or just a note) to that timeline at
+  any time — not tied to a caregiver visit.
 
 ## Deploying the web app
 
@@ -137,39 +114,34 @@ build the invite-email redirect link).
 
 ## Data model
 
-`agencies → users (role: admin/nurse/family) → patients → care_plans →
-care_tasks`, and per visit: `shifts → visits → visit_tasks, vitals,
-visit_notes, photos`. `incidents` and `messages` hang off `patients`.
-Every table carries `agency_id`; every read/write is scoped by Supabase RLS
-policies in the migration (nurses see only their assigned patients,
-families see only their linked patient, admins see their whole agency) —
-enforced at the database layer, so it holds no matter which client is
-reading or writing.
+`agencies → users (role: admin/caregiver/family) → patients
+(caregiver_id — one assigned caregiver) → visits (clock-in/out, live
+location, end-of-day report) → patient_updates (the shared timeline:
+caregiver shift reports + family photos/notes)`. `family_links` connects
+family users to the patient(s) they can see. Every table carries
+`agency_id`; every read/write is scoped by RLS policies in the migration,
+enforced at the database layer.
 
-`family_links` is a join table (family user ↔ patient) so a family member
-can in principle follow more than one patient — both apps' patient
-switchers handle that case.
-
-Live-board status (scheduled / checked-in / completed / **missed**) is
-derived on read rather than stored — a shift is "missed" once its start
-time + 15 minutes has passed with no check-in
-(`mobile/src/lib/shift-status.ts` / `web/src/lib/shift-status.ts`, kept in
-sync by hand since the two apps don't share a package). See the production
-note below on why this needs a scheduled job.
+`visits.current_lat`/`current_lng` is **overwritten**, not appended, while
+a visit is active, and cleared on clock-out — there's no stored location
+trail, only the fact that a shift happened and what was reported. `visits`
+and `patient_updates` are both added to the `supabase_realtime` publication
+so the family dashboard's live map and timeline update without polling.
 
 ## HIPAA-minded, at MVP level
 
 This is a starting point, not a compliance certification. What's already in place:
 
 - Every PHI-bearing table has RLS enabled; there is no anonymous read path.
-- Photos live in a **private** Supabase Storage bucket; both clients only
-  ever get short-lived signed URLs, never public paths.
+- Photos live in a **private** Supabase Storage bucket (`patient-photos`);
+  the app only ever gets short-lived signed URLs, never public paths.
 - `audit_log` records who did what to which entity and when — called from
-  check-in/out, incident creation, and invites in both apps. Extend this
-  to every PHI read if you need full access accountability.
-- No PHI appears in URLs, the mobile app's invite flow, or client logs.
-- Neither app handles raw passwords beyond what's necessary — Supabase
-  Auth owns credential storage and hashing.
+  clock-in/out and invites. Extend this to every PHI read if you need full
+  access accountability.
+- No PHI appears in URLs or client logs.
+- Live location is ephemeral by design (see above) and only visible to the
+  linked family member(s) and admin, per RLS — never public, never stored
+  after the shift ends.
 
 **What a real production deployment still needs:**
 
@@ -178,35 +150,33 @@ This is a starting point, not a compliance certification. What's already in plac
   system.
 - Encryption at rest — confirm it's enabled on your Supabase project tier.
 - Session timeouts / idle logout, especially on shared family devices.
-- A scheduled job (Supabase `pg_cron` + a Postgres function, or a
-  scheduled Edge Function) that proactively checks for missed visits and
-  open incidents and pushes a notification — today that logic only runs
-  when someone has a client open on the live board.
-- Push notifications in general — not implemented in this MVP. Mobile
-  would use `expo-notifications`; web would use the Web Push API. Both
-  would hang off the same Edge Function trigger.
-- Tightening the `visit-photos` storage write policy, which currently
+- Explicit, persistent consent/notice for the caregiver about location
+  sharing — the app shows a banner while clocked in, but a real rollout
+  should have this as an explicit acknowledgment at hire/onboarding time,
+  not just an in-app notice.
+- Push notifications (caregiver clocked in, new timeline update) — not
+  implemented in this MVP. Would use the Web Push API + a Supabase Edge
+  Function trigger.
+- Tightening the `patient-photos` storage write policy, which currently
   allows any authenticated user to upload to any path in the bucket
-  (visibility is still correctly restricted by the `photos` table RLS
-  policies, but the write path itself isn't yet scoped to "nurse's own
-  visit").
+  (visibility is still correctly restricted by RLS on `patient_updates`,
+  but the write path itself isn't yet scoped to "your own linked patient").
 - Real geocoding on patient address entry (admin currently enters lat/lng
-  by hand) and a device-spoofing–resistant location check for GPS
-  check-in.
-- Rate limiting on auth and message endpoints, and a documented data
-  retention / deletion policy.
+  by hand) and a device-spoofing–resistant location check.
+- Rate limiting on auth endpoints, and a documented data retention /
+  deletion policy — especially relevant now that live location data flows
+  through the system, even if only ephemerally.
+- Rebuilding `mobile/` to match this schema, if a native app is still part
+  of the roadmap — see the status note at the top.
 
 ## What's intentionally out of scope for this MVP
 
-- Billing / invoicing (the reports screen computes hours delivered — the
-  input to billing and payroll — but doesn't generate invoices or run
-  payroll).
-- Recurring shift edits/deletes as a series (cancelling is per-occurrence).
-- Push notifications for missed visits / incidents (see the note above).
-- Care plan templates library — each patient's care plan is authored from
-  scratch today.
+- Shift scheduling — a caregiver just clocks in whenever they arrive, no
+  expected time is set or checked. No lateness/no-show detection yet.
+- Care-plan checklists, vitals tracking, incident reports, in-app
+  messaging, hours/billing reporting — all present in an earlier, broader
+  version of this app and deliberately cut for this family-first MVP. Easy
+  to reintroduce individually later if a specific one earns its way back in.
+- Multiple caregivers per patient, or one caregiver covering multiple
+  patients — today's model is strictly 1:1.
 - Offline support — every screen assumes a network connection to Supabase.
-- A shared TypeScript package for the code duplicated between `mobile/`
-  and `web/` (types, RLS-shaped query logic, care-score math). Fine at
-  this size; worth factoring out into a shared package if both clients
-  keep growing.
