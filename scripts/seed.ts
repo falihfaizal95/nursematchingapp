@@ -2,9 +2,11 @@
 // 2 family accounts, and ~2 weeks of completed visits + vitals so the
 // family dashboard charts have something to show.
 //
-// Usage: npm run seed
-// Requires EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (from
-// .env.local) — the service role key bypasses RLS for provisioning.
+// Usage: npm run seed (from the repo root)
+// Requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (from .env.local at
+// the repo root) — the service role key bypasses RLS for provisioning.
+// This script is shared by both apps (mobile/, web/) since it only talks
+// to Supabase directly — it doesn't care which client reads the data.
 
 try {
   process.loadEnvFile(".env.local");
@@ -14,11 +16,11 @@ try {
 
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const url = process.env.SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !serviceKey) {
-  console.error("Missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Copy .env.example to .env.local and fill it in.");
+  console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Copy .env.example to .env.local (repo root) and fill it in.");
   process.exit(1);
 }
 

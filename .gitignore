@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
+# dependencies (node_modules can live at repo root or inside mobile/, web/)
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,7 +10,7 @@
 !.yarn/releases
 !.yarn/versions
 
-# expo
+# expo (mobile/)
 .expo/
 dist/
 web-build/
@@ -24,8 +24,16 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# next.js (web/)
+.next/
+out/
+next-env.d.ts
+
+# vercel
+.vercel
+
 # testing
-/coverage
+coverage/
 
 # misc
 .DS_Store
