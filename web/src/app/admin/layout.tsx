@@ -1,13 +1,7 @@
-import Link from "next/link";
-import { HeartHandshake, LayoutDashboard, Users, UserPlus } from "lucide-react";
+import { HeartHandshake } from "lucide-react";
 import { requireUser } from "@/lib/current-user";
 import { signOut } from "@/app/login/actions";
-
-const nav = [
-  { href: "/admin", label: "Active now", icon: LayoutDashboard },
-  { href: "/admin/patients", label: "Patients", icon: Users },
-  { href: "/admin/caregivers", label: "Caregivers", icon: UserPlus },
-];
+import { AdminNav } from "./_components/admin-nav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireUser("admin");
@@ -24,18 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <p className="text-xs text-slate-500">Agency console</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-1">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
-            >
-              <item.icon size={17} />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <AdminNav />
         <div className="border-t border-slate-200 pt-4">
           <p className="px-3 text-sm font-medium text-slate-900">{profile.full_name}</p>
           <p className="px-3 text-xs text-slate-500">{profile.email}</p>

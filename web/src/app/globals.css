@@ -39,3 +39,26 @@ body {
 .live-dot {
   animation: live-pulse 1.8s ease-out infinite;
 }
+
+/* Gentle content entrance on route changes (applied via template.tsx so it
+   re-triggers on every navigation). */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: fade-up 0.22s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
