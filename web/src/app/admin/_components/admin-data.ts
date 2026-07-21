@@ -8,15 +8,17 @@ import type { AppUser, Patient, Visit } from "@/lib/types";
 
 export type PatientWithCaregiver = Patient & { users: { full_name: string } | null };
 export type ActiveVisitRow = Visit & { patients: Patient; users: AppUser };
+export type VisitRow = Visit & { patients: { full_name: string }; users: { full_name: string } };
 export type CaregiverWithPatients = AppUser & { patients: { full_name: string }[] };
 
 type Cache = {
   patients: PatientWithCaregiver[] | null;
-  active: ActiveVisitRow[] | null;
+  today: VisitRow[] | null;
+  concerns: VisitRow[] | null;
   caregivers: CaregiverWithPatients[] | null;
 };
 
-const cache: Cache = { patients: null, active: null, caregivers: null };
+const cache: Cache = { patients: null, today: null, concerns: null, caregivers: null };
 
 export function getCached<K extends keyof Cache>(key: K): Cache[K] {
   return cache[key];
@@ -33,16 +35,31 @@ export async function fetchPatients(): Promise<PatientWithCaregiver[]> {
   return cache.patients;
 }
 
-export async function fetchActiveVisits(): Promise<ActiveVisitRow[]> {
+export async function fetchTodayVisits(): Promise<VisitRow[]> {
+  const supabase = createClient();
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const { data, error } = await supabase
+    .from("visits")
+    .select("*, patients(full_name), users!visits_caregiver_id_fkey(full_name)")
+    .gte("clock_in_at", start.toISOString())
+    .order("clock_in_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  cache.today = (data ?? []) as unknown as VisitRow[];
+  return cache.today;
+}
+
+export async function fetchConcerns(): Promise<VisitRow[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("visits")
-    .select("*, patients(*), users!visits_caregiver_id_fkey(*)")
-    .eq("status", "active")
-    .order("clock_in_at", { ascending: false });
+    .select("*, patients(full_name), users!visits_caregiver_id_fkey(full_name)")
+    .eq("concern_flag", true)
+    .order("clock_in_at", { ascending: false })
+    .limit(30);
   if (error) throw new Error(error.message);
-  cache.active = (data ?? []) as unknown as ActiveVisitRow[];
-  return cache.active;
+  cache.concerns = (data ?? []) as unknown as VisitRow[];
+  return cache.concerns;
 }
 
 export async function fetchCaregivers(): Promise<CaregiverWithPatients[]> {
@@ -57,9 +74,10 @@ export async function fetchCaregivers(): Promise<CaregiverWithPatients[]> {
   return cache.caregivers;
 }
 
-// Kick off all three in parallel; callers read from the cache as each lands.
+// Kick off everything in parallel; callers read from the cache as each lands.
 export function warmAll() {
   fetchPatients().catch(() => {});
-  fetchActiveVisits().catch(() => {});
+  fetchTodayVisits().catch(() => {});
+  fetchConcerns().catch(() => {});
   fetchCaregivers().catch(() => {});
 }

@@ -1,12 +1,22 @@
-// Hand-maintained types mirroring supabase/migrations/0002_family_first_rebuild.sql.
+// Hand-maintained types mirroring supabase/migrations/0002 + 0003.
 
 export type UserRole = "admin" | "caregiver" | "family";
 export type VisitStatus = "active" | "completed";
-export type UpdateType = "shift_report" | "family_photo" | "family_note";
+export type UpdateType =
+  | "shift_report"
+  | "family_photo"
+  | "family_note"
+  | "arrived"
+  | "task"
+  | "concern"
+  | "completed"
+  | "visit_photo";
+export type Mood = "great" | "good" | "okay" | "unwell";
 
 export interface Agency {
   id: string;
   name: string;
+  phone: string | null;
   created_at: string;
 }
 
@@ -17,6 +27,9 @@ export interface AppUser {
   full_name: string;
   email: string;
   phone: string | null;
+  photo_url: string | null;
+  years_experience: number | null;
+  bio: string | null;
   created_at: string;
 }
 
@@ -35,6 +48,7 @@ export interface Patient {
   notes: string | null;
   photo_url: string | null;
   caregiver_id: string | null;
+  next_visit_at: string | null;
   active: boolean;
   created_at: string;
 }
@@ -64,9 +78,38 @@ export interface Visit {
   clock_out_lat: number | null;
   clock_out_lng: number | null;
   report: string | null;
+  ate_breakfast: boolean;
+  ate_lunch: boolean;
+  ate_dinner: boolean;
+  medication_given: boolean;
+  showered: boolean;
+  walked: boolean;
+  drank_water: boolean;
+  bathroom_assisted: boolean;
+  mood: Mood | null;
+  pain_level: number | null;
+  concern_flag: boolean;
+  concern_text: string | null;
+  photo_path: string | null;
   status: VisitStatus;
   created_at: string;
 }
+
+// The set of checklist booleans on a visit, with display labels. Keeping
+// this list in one place keeps the caregiver checklist, the family care
+// summary, and the timeline in sync.
+export const CARE_TASKS = [
+  { field: "medication_given", label: "Medication given" },
+  { field: "ate_breakfast", label: "Ate breakfast" },
+  { field: "ate_lunch", label: "Ate lunch" },
+  { field: "ate_dinner", label: "Ate dinner" },
+  { field: "drank_water", label: "Drank enough water" },
+  { field: "showered", label: "Showered / bathed" },
+  { field: "walked", label: "Walked / active" },
+  { field: "bathroom_assisted", label: "Assisted with bathroom" },
+] as const;
+
+export type CareTaskField = (typeof CARE_TASKS)[number]["field"];
 
 export interface PatientUpdate {
   id: string;

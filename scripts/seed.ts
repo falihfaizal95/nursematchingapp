@@ -76,7 +76,7 @@ async function main() {
 
   const { data: agency, error: agencyError } = await supabase
     .from("agencies")
-    .insert({ name: "Harbor Home Care" })
+    .insert({ name: "Harbor Home Care", phone: "555-0100" })
     .select("id")
     .single();
   if (agencyError) throw agencyError;
@@ -93,18 +93,24 @@ async function main() {
   });
 
   // --- Caregivers ------------------------------------------------------------
-  const caregiverNames = ["Jordan Blake", "Priya Nair", "Marcus Webb"];
+  const caregiverDefs = [
+    { name: "Jordan Blake", years: 6, bio: "Warm and dependable — 6 years in home care, loves a good crossword with clients." },
+    { name: "Priya Nair", years: 9, bio: "Registered nurse background, specializes in diabetes and medication management." },
+    { name: "Marcus Webb", years: 4, bio: "Patient and upbeat, great with post-surgery mobility and physical therapy support." },
+  ];
   const caregiverIds: string[] = [];
-  for (let i = 0; i < caregiverNames.length; i++) {
+  for (let i = 0; i < caregiverDefs.length; i++) {
     const email = `caregiver${i + 1}@harborcare.demo`;
-    const id = await createAuthUser(email, caregiverNames[i]);
+    const id = await createAuthUser(email, caregiverDefs[i].name);
     await supabase.from("users").insert({
       id,
       agency_id: agencyId,
       role: "caregiver",
-      full_name: caregiverNames[i],
+      full_name: caregiverDefs[i].name,
       email,
-      phone: `555-010${i}`,
+      phone: `555-011${i}`,
+      years_experience: caregiverDefs[i].years,
+      bio: caregiverDefs[i].bio,
     });
     caregiverIds.push(id);
   }
@@ -163,15 +169,26 @@ async function main() {
     },
   ];
 
+  const now = new Date();
+  const tomorrow9 = new Date(now);
+  tomorrow9.setDate(tomorrow9.getDate() + 1);
+  tomorrow9.setHours(9, 0, 0, 0);
+  const today8 = new Date(now);
+  today8.setHours(8, 0, 0, 0); // in the past -> drives a "missed" alert for the unassigned patient
+
   const patientIds: string[] = [];
   for (const def of patientDefs) {
     const { caregiverIndex, ...rest } = def;
+    // Assigned patients have an upcoming visit tomorrow; the unassigned one
+    // has an expected time already in the past so admin shows a missed alert.
+    const nextVisit = caregiverIndex !== null ? tomorrow9 : today8;
     const { data: patient, error } = await supabase
       .from("patients")
       .insert({
         agency_id: agencyId,
         ...rest,
         caregiver_id: caregiverIndex !== null ? caregiverIds[caregiverIndex] : null,
+        next_visit_at: nextVisit.toISOString(),
       })
       .select("id")
       .single();
@@ -202,87 +219,165 @@ async function main() {
     familyIds.push(id);
   }
 
-  // --- ~10 days of completed visits + end-of-day reports ------------------
-  const now = new Date();
-  for (let p = 0; p < patientDefs.length; p++) {
+  // Full checklist (everything done) for completed visits.
+  const FULL_CHECKLIST = {
+    ate_breakfast: true,
+    ate_lunch: true,
+    ate_dinner: false,
+    medication_given: true,
+    showered: true,
+    walked: true,
+    drank_water: true,
+    bathroom_assisted: true,
+  };
+  const TASK_EVENTS = [
+    "Medication given",
+    "Ate breakfast",
+    "Ate lunch",
+    "Drank enough water",
+    "Showered / bathed",
+    "Walked / active",
+  ];
+  const MOODS = ["great", "good", "great", "good", "okay"];
+
+  async function insertEvent(
+    patientId: string,
+    caregiverId: string,
+    visitId: string,
+    type: string,
+    body: string,
+    at: Date,
+  ) {
+    await supabase.from("patient_updates").insert({
+      agency_id: agencyId,
+      patient_id: patientId,
+      visit_id: visitId,
+      author_id: caregiverId,
+      type,
+      body,
+      created_at: at.toISOString(),
+    });
+  }
+
+  // Insert a completed visit with a full checklist, mood, pain, note, and a
+  // timeline (granular events only for recent days keeps the row count sane).
+  async function seedCompletedVisit(
+    p: number,
+    clockIn: Date,
+    clockOut: Date,
+    opts: { granular: boolean; concern?: string } = { granular: false },
+  ) {
     const def = patientDefs[p];
-    if (def.caregiverIndex === null) continue;
     const patientId = patientIds[p];
-    const caregiverId = caregiverIds[def.caregiverIndex];
+    const caregiverId = caregiverIds[def.caregiverIndex!];
+    const report = REPORTS[Math.floor(Math.random() * REPORTS.length)];
+    const mood = MOODS[Math.floor(Math.random() * MOODS.length)];
 
-    for (let daysAgo = 10; daysAgo >= 1; daysAgo--) {
-      const day = new Date(now);
-      day.setDate(day.getDate() - daysAgo);
-      const clockIn = new Date(day);
-      clockIn.setHours(9, Math.floor(Math.random() * 10), 0, 0);
-      const clockOut = new Date(clockIn);
-      clockOut.setHours(clockIn.getHours() + 2, clockIn.getMinutes() + 30, 0, 0);
-      const report = REPORTS[Math.floor(Math.random() * REPORTS.length)];
-
-      const { data: visit, error: visitError } = await supabase
-        .from("visits")
-        .insert({
-          agency_id: agencyId,
-          patient_id: patientId,
-          caregiver_id: caregiverId,
-          clock_in_at: clockIn.toISOString(),
-          clock_in_lat: def.lat,
-          clock_in_lng: def.lng,
-          clock_in_flagged: false,
-          clock_in_distance_m: Math.round(Math.random() * 20),
-          clock_out_at: clockOut.toISOString(),
-          clock_out_lat: def.lat,
-          clock_out_lng: def.lng,
-          report,
-          status: "completed",
-        })
-        .select("id")
-        .single();
-      if (visitError) throw visitError;
-
-      await supabase.from("patient_updates").insert({
+    const { data: visit, error } = await supabase
+      .from("visits")
+      .insert({
         agency_id: agencyId,
         patient_id: patientId,
-        visit_id: visit.id,
-        author_id: caregiverId,
-        type: "shift_report",
-        body: report,
-        created_at: clockOut.toISOString(),
+        caregiver_id: caregiverId,
+        clock_in_at: clockIn.toISOString(),
+        clock_in_lat: def.lat,
+        clock_in_lng: def.lng,
+        clock_in_flagged: false,
+        clock_in_distance_m: Math.round(Math.random() * 20),
+        clock_out_at: clockOut.toISOString(),
+        clock_out_lat: def.lat,
+        clock_out_lng: def.lng,
+        report,
+        ...FULL_CHECKLIST,
+        mood,
+        pain_level: Math.floor(Math.random() * 3),
+        concern_flag: !!opts.concern,
+        concern_text: opts.concern ?? null,
+        status: "completed",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+
+    await insertEvent(patientId, caregiverId, visit.id, "arrived", "Caregiver arrived", clockIn);
+    if (opts.granular) {
+      const span = clockOut.getTime() - clockIn.getTime();
+      TASK_EVENTS.forEach((label, i) => {
+        const at = new Date(clockIn.getTime() + (span * (i + 1)) / (TASK_EVENTS.length + 2));
+        void insertEvent(patientId, caregiverId, visit.id, "task", label, at);
       });
     }
+    if (opts.concern) {
+      await insertEvent(patientId, caregiverId, visit.id, "concern", opts.concern, new Date(clockIn.getTime() + 30 * 60_000));
+    }
+    await insertEvent(patientId, caregiverId, visit.id, "shift_report", report, clockOut);
+    await insertEvent(patientId, caregiverId, visit.id, "completed", "Shift complete", clockOut);
+    return visit.id as string;
+  }
 
-    // A couple of family-posted updates for realism, if this patient has family linked.
-    const familyIndex = familyDefs.findIndex((f) => f.patientIndex === p);
-    if (familyIndex >= 0) {
-      const twoDaysAgo = new Date(now);
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-      await supabase.from("patient_updates").insert({
-        agency_id: agencyId,
-        patient_id: patientId,
-        author_id: familyIds[familyIndex],
-        type: "family_note",
-        body: "Dropped off her favorite soup — please let her know it's in the fridge!",
-        created_at: twoDaysAgo.toISOString(),
-      });
+  // --- ~10 days of history for each assigned patient ----------------------
+  for (let p = 0; p < patientDefs.length; p++) {
+    if (patientDefs[p].caregiverIndex === null) continue;
+    for (let daysAgo = 10; daysAgo >= 1; daysAgo--) {
+      const clockIn = new Date(now);
+      clockIn.setDate(clockIn.getDate() - daysAgo);
+      clockIn.setHours(9, Math.floor(Math.random() * 10), 0, 0);
+      const clockOut = new Date(clockIn.getTime() + 2.5 * 3_600_000);
+      // Flag one concern on Rosa's most recent past visit for the admin demo.
+      const concern =
+        p === 2 && daysAgo === 1
+          ? "Mentioned mild dizziness when standing — advised to rise slowly, will keep an eye on it."
+          : undefined;
+      await seedCompletedVisit(p, clockIn, clockOut, { granular: daysAgo <= 2, concern });
     }
   }
 
-  // --- One active visit right now, so the live map/status isn't empty -----
+  // --- Today: Harold's visit already complete (family sees a green summary) -
+  const haroldIn = new Date(now.getTime() - 3 * 3_600_000);
+  const haroldOut = new Date(now.getTime() - 40 * 60_000);
+  await seedCompletedVisit(1, haroldIn, haroldOut, { granular: true });
+
+  // --- Today: Eleanor's caregiver is on shift right now (live map/status) --
   const liveDef = patientDefs[0];
   const clockInNow = new Date(now.getTime() - 55 * 60_000);
-  await supabase.from("visits").insert({
+  const { data: liveVisit } = await supabase
+    .from("visits")
+    .insert({
+      agency_id: agencyId,
+      patient_id: patientIds[0],
+      caregiver_id: caregiverIds[0],
+      clock_in_at: clockInNow.toISOString(),
+      clock_in_lat: liveDef.lat,
+      clock_in_lng: liveDef.lng,
+      clock_in_flagged: false,
+      clock_in_distance_m: 4,
+      current_lat: liveDef.lat + 0.0006,
+      current_lng: liveDef.lng - 0.0004,
+      location_updated_at: new Date(now.getTime() - 2 * 60_000).toISOString(),
+      medication_given: true,
+      ate_breakfast: true,
+      drank_water: true,
+      mood: "great",
+      pain_level: 1,
+      report: "She's in a wonderful mood today — we had breakfast together and did the crossword.",
+      status: "active",
+    })
+    .select("id")
+    .single();
+  if (liveVisit) {
+    await insertEvent(patientIds[0], caregiverIds[0], liveVisit.id, "arrived", "Caregiver arrived", clockInNow);
+    await insertEvent(patientIds[0], caregiverIds[0], liveVisit.id, "task", "Medication given", new Date(clockInNow.getTime() + 12 * 60_000));
+    await insertEvent(patientIds[0], caregiverIds[0], liveVisit.id, "task", "Ate breakfast", new Date(clockInNow.getTime() + 30 * 60_000));
+  }
+
+  // --- A family-posted note on the timeline for realism -------------------
+  await supabase.from("patient_updates").insert({
     agency_id: agencyId,
     patient_id: patientIds[0],
-    caregiver_id: caregiverIds[0],
-    clock_in_at: clockInNow.toISOString(),
-    clock_in_lat: liveDef.lat,
-    clock_in_lng: liveDef.lng,
-    clock_in_flagged: false,
-    clock_in_distance_m: 4,
-    current_lat: liveDef.lat + 0.0006,
-    current_lng: liveDef.lng - 0.0004,
-    location_updated_at: new Date(now.getTime() - 2 * 60_000).toISOString(),
-    status: "active",
+    author_id: familyIds[0],
+    type: "family_note",
+    body: "Dropped off her favorite soup — please let her know it's in the fridge!",
+    created_at: new Date(now.getTime() - 26 * 3_600_000).toISOString(),
   });
 
   console.log("\nDone. Demo accounts (all use the same password):\n");

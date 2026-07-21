@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/current-user";
 import { assignCaregiver } from "@/lib/actions/admin";
 import { inviteFamily } from "@/lib/actions/admin";
+import { NextVisitEditor } from "@/app/admin/_components/next-visit-editor";
 import type { AppUser, FamilyLink } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +92,11 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
             No caregivers yet — invite one from the Caregivers page first.
           </p>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900">Schedule</h2>
+        <NextVisitEditor patientId={id} initial={patient.next_visit_at} />
       </section>
 
       <section className="space-y-3">

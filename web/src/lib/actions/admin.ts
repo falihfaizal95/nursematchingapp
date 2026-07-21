@@ -59,6 +59,60 @@ export async function assignCaregiver(patientId: string, caregiverId: string | n
   revalidatePath(`/admin/patients/${patientId}`);
 }
 
+export async function setNextVisit(patientId: string, whenLocal: string | null) {
+  const { supabase, profile } = await requireUser("admin");
+  const iso = whenLocal ? new Date(whenLocal).toISOString() : null;
+
+  const { error } = await supabase
+    .from("patients")
+    .update({ next_visit_at: iso })
+    .eq("id", patientId)
+    .eq("agency_id", profile.agency_id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/admin/patients/${patientId}`);
+  revalidatePath("/admin");
+}
+
+export async function updateCaregiverProfile(
+  caregiverId: string,
+  fields: { years_experience: number | null; phone: string | null; bio: string | null },
+) {
+  const { supabase, profile } = await requireUser("admin");
+
+  const { error } = await supabase
+    .from("users")
+    .update(fields)
+    .eq("id", caregiverId)
+    .eq("agency_id", profile.agency_id)
+    .eq("role", "caregiver");
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin");
+}
+
+// "Review" a flagged concern — clears the flag once the agency has seen it.
+export async function resolveConcern(visitId: string) {
+  const { supabase, profile } = await requireUser("admin");
+
+  const { error } = await supabase
+    .from("visits")
+    .update({ concern_flag: false })
+    .eq("id", visitId)
+    .eq("agency_id", profile.agency_id);
+  if (error) throw new Error(error.message);
+
+  await recordAudit(supabase, {
+    agencyId: profile.agency_id,
+    userId: profile.id,
+    action: "resolve_concern",
+    entityType: "visit",
+    entityId: visitId,
+  });
+
+  revalidatePath("/admin");
+}
+
 async function inviteUser(
   role: "caregiver" | "family",
   agencyId: string,

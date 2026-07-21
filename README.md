@@ -1,12 +1,22 @@
 # Harbor Home Care
 
-A family-first home care transparency app. A caregiver is assigned to
-exactly one patient. While they're clocked in, the patient's family can
-watch a live "Find My"-style map of the caregiver's location, and see a
-shared timeline of the caregiver's end-of-day reports plus the family's
-own photo updates (medication taken, a meal, anything). The pitch is
-trust and visibility for the family — everything else is deliberately
-minimal.
+A **peace-of-mind app for families with a loved one in home care.** It is
+not workforce software — every screen exists to answer the three questions
+a son or daughter has when they check on a parent:
+
+1. **Did the caregiver actually show up?**
+2. **Is everything okay?**
+3. **What happened today?**
+
+A caregiver is assigned to one patient. On shift they GPS clock-in, work
+through a care checklist (meds, meals, water, bathing, walk, bathroom), set
+a mood, note a pain level, write a note, add one optional photo, and can
+flag a concern — then clock out. The family sees a big **status card**
+(arrived / on-site with a live map / complete / running late / no check-in),
+a **Peace of Mind summary** (arrived ✓, medication ✓, meals ✓, mood, no
+concerns), the caregiver's note and photo, a **caregiver profile with call
+buttons**, and a **live timeline** of the visit. Admin sees today's visits,
+late/missed check-ins, and flagged concerns.
 
 > **Status:** `web/` reflects this product as of the family-first rebuild.
 > `mobile/` (Expo) still targets the *previous*, much broader schema
@@ -23,28 +33,31 @@ web/            Next.js app — the current, family-first product
 
 ## The three roles
 
-- **Family** — the primary user. Sees a live map while their assigned
-  caregiver is clocked in, reads the caregiver's end-of-day reports, and
-  can post their own updates (a photo of medication taken, a quick note)
-  to a shared timeline for that patient.
-- **Caregiver** — assigned to exactly one patient, ongoing (no shift
-  scheduling). Clocks in (starts sharing live location), and must submit
-  a short end-of-day report before they're allowed to clock out.
-- **Admin** — creates patients, assigns one caregiver to each, invites
-  family members, and can see who's currently clocked in across the
-  agency. Deliberately thin — this app isn't primarily an ops dashboard.
+- **Family** — the primary user. A status card answers "did they show up?"
+  (with a live map while on-site), a Peace of Mind summary answers "is
+  everything okay?", and the note + photo + timeline answer "what happened
+  today?" — plus the caregiver's profile and one-tap call buttons for the
+  caregiver or the agency, and the next scheduled visit.
+- **Caregiver** — assigned to one patient. GPS clock-in, a care checklist
+  (each item checked drops a timestamped entry on the family's timeline),
+  mood, pain, a written note, one optional photo, a flag-a-concern button,
+  and clock-out.
+- **Admin** — today's visits (on-shift now / completed), late & missed
+  check-in alerts, flagged concerns to review, caregiver profiles, family
+  invites, and each patient's next scheduled visit.
 
 ## Setup
 
 ### 1. Supabase project
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
-2. Run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-   **then** [`supabase/migrations/0002_family_first_rebuild.sql`](supabase/migrations/0002_family_first_rebuild.sql)
-   in the SQL Editor, in that order. The second migration drops the
-   original broad schema and replaces it with the lean one described
-   below — if you already ran 0001 on a project with demo data in it,
-   0002 wipes that data (re-seed after).
+2. Run these migrations in the SQL Editor, **in order**:
+   [`0001_init.sql`](supabase/migrations/0001_init.sql) →
+   [`0002_family_first_rebuild.sql`](supabase/migrations/0002_family_first_rebuild.sql) →
+   [`0003_peace_of_mind.sql`](supabase/migrations/0003_peace_of_mind.sql).
+   0002 replaces 0001's broad schema; 0003 is additive (care checklist,
+   mood, pain, concern, caregiver profiles, agency phone, next-visit time,
+   and the timeline event types). Re-seed after running them.
 3. Deploy the invite function (used by `mobile/`, once it's rebuilt to
    match; harmless to deploy now regardless):
    ```bash
