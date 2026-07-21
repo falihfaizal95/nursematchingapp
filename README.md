@@ -1,4 +1,4 @@
-# Harbor Home Care
+# Evoura Home Care
 
 A **peace-of-mind app for families with a loved one in home care.** It is
 not workforce software — every screen exists to answer the three questions

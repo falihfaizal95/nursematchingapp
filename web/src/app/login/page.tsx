@@ -20,7 +20,7 @@ export default async function LoginPage({
             <HeartHandshake size={24} />
           </div>
           <div>
-            <p className="text-lg font-bold tracking-tight">Harbor</p>
+            <p className="text-lg font-bold tracking-tight">Evoura</p>
             <p className="text-xs font-medium text-blue-100">Home Care</p>
           </div>
         </div>

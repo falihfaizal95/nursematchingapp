@@ -10,13 +10,13 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Harbor Home Care",
+  title: "Evoura Home Care",
   description: "Real-time visibility for families — see when your caregiver arrives, where they are, and how your loved one is doing.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Harbor",
+    title: "Evoura",
   },
   icons: {
     icon: [

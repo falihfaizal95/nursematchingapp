@@ -17,7 +17,7 @@ export default async function FamilyLayout({ children }: { children: React.React
               <HeartHandshake size={18} />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight text-slate-900">Harbor</p>
+              <p className="text-sm font-bold leading-tight text-slate-900">Evoura</p>
               <p className="text-xs font-medium leading-tight text-slate-400">Family</p>
             </div>
           </div>

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Harbor Home Care",
-    "slug": "harbor-home-care",
-    "scheme": "harbor",
+    "name": "Evoura Home Care",
+    "slug": "evoura-home-care",
+    "scheme": "evoura",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,15 +10,15 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harborhomecare.app",
+      "bundleIdentifier": "com.evourahomecare.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Harbor verifies your location when you check in and out of a visit, so families and the agency can trust the visit happened at the patient's home.",
-        "NSCameraUsageDescription": "Harbor lets you photograph wound progress and care moments to share with the care team and family.",
-        "NSPhotoLibraryUsageDescription": "Harbor lets you attach photos from your library to a visit."
+        "NSLocationWhenInUseUsageDescription": "Evoura verifies your location when you check in and out of a visit, so families and the agency can trust the visit happened at the patient's home.",
+        "NSCameraUsageDescription": "Evoura lets you photograph wound progress and care moments to share with the care team and family.",
+        "NSPhotoLibraryUsageDescription": "Evoura lets you attach photos from your library to a visit."
       }
     },
     "android": {
-      "package": "com.harborhomecare.app",
+      "package": "com.evourahomecare.app",
       "adaptiveIcon": {
         "backgroundColor": "#0d9488",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -47,14 +47,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Harbor verifies your location when you check in and out of a visit."
+          "locationWhenInUsePermission": "Evoura verifies your location when you check in and out of a visit."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Harbor lets you attach photos from your library to a visit.",
-          "cameraPermission": "Harbor lets you photograph wound progress and care moments during a visit."
+          "photosPermission": "Evoura lets you attach photos from your library to a visit.",
+          "cameraPermission": "Evoura lets you photograph wound progress and care moments during a visit."
         }
       ]
     ]

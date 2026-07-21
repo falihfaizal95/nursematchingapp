@@ -71,12 +71,12 @@ async function deleteExistingDemoUsers() {
 }
 
 async function main() {
-  console.log("Seeding Harbor Home Care demo data...");
+  console.log("Seeding Evoura Home Care demo data...");
   await deleteExistingDemoUsers();
 
   const { data: agency, error: agencyError } = await supabase
     .from("agencies")
-    .insert({ name: "Harbor Home Care", phone: "555-0100" })
+    .insert({ name: "Evoura Home Care", phone: "555-0100" })
     .select("id")
     .single();
   if (agencyError) throw agencyError;

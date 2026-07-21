@@ -34,7 +34,7 @@ export default function LoginScreen() {
           <View style={styles.logo}>
             <Heart size={26} color={colors.white} fill={colors.white} />
           </View>
-          <Text style={styles.title}>Harbor Home Care</Text>
+          <Text style={styles.title}>Evoura Home Care</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
 

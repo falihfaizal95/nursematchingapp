@@ -1,12 +1,12 @@
 {
-  "name": "Harbor Home Care",
-  "short_name": "Harbor",
+  "name": "Evoura Home Care",
+  "short_name": "Evoura",
   "description": "See your loved one's care in real time — live location, updates, and photos while your caregiver is on shift.",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#FBF7F1",
-  "theme_color": "#0d9488",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
   "orientation": "portrait",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

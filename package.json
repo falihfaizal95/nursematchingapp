@@ -1,8 +1,8 @@
 {
-  "name": "harbor-home-care",
+  "name": "evoura-home-care",
   "version": "1.0.0",
   "private": true,
-  "description": "Shared Supabase backend tooling for the Harbor Home Care mobile app (mobile/) and web app (web/).",
+  "description": "Shared Supabase backend tooling for the Evoura Home Care mobile app (mobile/) and web app (web/).",
   "scripts": {
     "seed": "tsx scripts/seed.ts",
     "gen-icons:mobile": "node mobile/scripts/gen-icons.mjs",

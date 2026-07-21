@@ -55,7 +55,7 @@ export function AdminShell({ user, children }: { user: AppUser; children: React.
             <HeartHandshake size={20} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-900">Harbor</p>
+            <p className="text-sm font-bold text-slate-900">Evoura</p>
             <p className="text-xs text-slate-500">Agency console</p>
           </div>
         </div>
