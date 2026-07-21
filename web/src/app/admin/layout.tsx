@@ -1,37 +1,13 @@
-import { HeartHandshake } from "lucide-react";
+import { Suspense } from "react";
 import { requireUser } from "@/lib/current-user";
-import { signOut } from "@/app/login/actions";
-import { AdminNav } from "./_components/admin-nav";
+import { AdminShell } from "./_components/admin-shell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireUser("admin");
 
   return (
-    <div className="flex min-h-dvh">
-      <aside className="hidden w-60 flex-col border-r border-slate-200 bg-white px-4 py-6 md:flex">
-        <div className="mb-8 flex items-center gap-2 px-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
-            <HeartHandshake size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Harbor</p>
-            <p className="text-xs text-slate-500">Agency console</p>
-          </div>
-        </div>
-        <AdminNav />
-        <div className="border-t border-slate-200 pt-4">
-          <p className="px-3 text-sm font-medium text-slate-900">{profile.full_name}</p>
-          <p className="px-3 text-xs text-slate-500">{profile.email}</p>
-          <form action={signOut}>
-            <button className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm text-slate-500 hover:bg-slate-100">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </aside>
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">{children}</div>
-      </main>
-    </div>
+    <Suspense>
+      <AdminShell user={profile}>{children}</AdminShell>
+    </Suspense>
   );
 }
